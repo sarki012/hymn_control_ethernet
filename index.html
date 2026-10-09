@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pico W Control</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
+        }
+        .container {
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #display {
+            background-color: #333;
+            color: #fff;
+            font-size: 2.5em;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 0 0 20px 0; /* top, right, bottom, left */
+            overflow: hidden;
+            position: relative;
+            /* Add flexbox for robust centering */
+            display: flex;
+            align-items: center; /* Vertical centering */
+            justify-content: flex-end; /* Right-align content */
+            height: 80px; /* Set a fixed height */
+        }
+        #display-text {
+            position: relative;
+            z-index: 2;
+        }
+        /* Flashing animation for the numbers */
+        @keyframes flash {
+            0%, 49.9% { opacity: 1; }
+            50%, 99.9% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        .flashing {
+            animation: flash 2s infinite; /* On for 1s, off for 1s */
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .btn {
+            padding: 20px;
+            font-size: 1.5em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            cursor: pointer;
+            user-select: none; /* Prevents text selection on repeated taps */
+        }
+        .btn:active {
+            background-color: #ddd;
+        }
+        .btn-send {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-clear {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="display">
+        <span id="display-text"></span>
+    </div>
+    <div class="keypad">
+        <div class="btn" onclick="appendNumber('1')">1</div>
+        <div class="btn" onclick="appendNumber('2')">2</div>
+        <div class="btn" onclick="appendNumber('3')">3</div>
+        <div class="btn" onclick="appendNumber('4')">4</div>
+        <div class="btn" onclick="appendNumber('5')">5</div>
+        <div class="btn" onclick="appendNumber('6')">6</div>
+        <div class="btn" onclick="appendNumber('7')">7</div>
+        <div class="btn" onclick="appendNumber('8')">8</div>
+        <div class="btn" onclick="appendNumber('9')">9</div>
+        <div class="btn btn-send" onclick="sendCode()">On</div>
+        <div class="btn" onclick="appendNumber('0')">0</div>
+        <div class="btn btn-clear" onclick="clearDisplay()">Off</div>
+    </div>
+</div>
+
+<script>
+    const displayText = document.getElementById('display-text');
+    let currentCode = '';
+
+    function appendNumber(num) {
+        // Don't allow more than 3 digits to be entered.
+        if (currentCode.length >= 3) {
+            return;
+        }
+        // Simply append the number. CSS will handle the alignment.
+        currentCode += num;
+        displayText.textContent = currentCode;
+    }
+
+    function sendCode() {
+        // Trim spaces before sending so "  1" becomes "1"
+        const codeToSend = currentCode.trim();
+        if (codeToSend) {
+            // Start flashing the numbers on the screen
+            displayText.classList.add('flashing');
+            // Send the command to the Pico
+            fetch(`/on?code=${codeToSend}`)
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        }
+    }
+
+    function clearDisplay() {
+        // Clear the number display
+        currentCode = '';
+        displayText.textContent = '';
+        
+        // Stop the visual flashing
+        displayText.classList.remove('flashing');
+
+        // Send the off command to the Pico
+        fetch('/off')
+            .then(response => response.text())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+    }
+</script>
+
+</body>
+</html>
